@@ -78,26 +78,31 @@ class YFinanceProxyCollector(BaseCollector):
 
             # 3. Fetch COMEX Silver price (per Troy Ounce)
             res_silver = await self.client.get(self.silver_url)
-            latency = int((time.time() - t_start) * 1000)
-            
-            print(f"\n========================================")
-            print(f"Collector: YFinanceProxy (Fallback)")
-            print(f"URLs Requested:")
-            print(f"  USDINR: {self.usdinr_url}")
-            print(f"  COMEX Gold: {self.gold_url}")
-            print(f"  COMEX Silver: {self.silver_url}")
-            print(f"HTTP Method: GET")
-            print(f"Status Code: {res_silver.status_code}")
-            print(f"Total Latency: {latency} ms")
-            print(f"Response Headers (COMEX Gold):")
-            for k in ["Date", "Cache-Control", "ETag", "Last-Modified", "Content-Type", "Server"]:
-                if k in res_gold.headers:
-                    print(f"  {k}: {res_gold.headers[k]}")
-            print(f"First 500 characters of COMEX Gold JSON payload:")
-            print(f"--- START ---")
-            import json as json_print
-            print(json_print.dumps(gold_data)[:500])
-            print(f"--- END ---")
+            if res_silver.status_code != 200:
+                logger.error(f"Failed to fetch COMEX Silver: HTTP {res_silver.status_code}")
+                return None
+            silver_data = res_silver.json()
+            comex_silver = silver_data["chart"]["result"][0]["meta"]["regularMarketPrice"]
+
+            # 4. Landed price math approximations
+            # 1 troy ounce = 31.1034768 grams. Gold traded in India in blocks of 10 grams.
+            price_gold_per_gram_usd = comex_gold / 31.1034768
+            price_gold_10g_inr_raw = price_gold_per_gram_usd * 10 * usdinr_rate
+            # Apply Customs + AIDC (Cess) + GST
+            landed_gold = price_gold_10g_inr_raw * (1 + self.customs_duty + self.aidc) * (1 + self.gst)
+
+            # 1 troy ounce = 0.0311034768 kg. Silver traded in India in blocks of 1 kg.
+            # 1 kg = 32.1507 troy ounces.
+            price_silver_1kg_inr_raw = comex_silver * 32.150746 * usdinr_rate
+            # Apply Customs + AIDC + GST
+            landed_silver = price_silver_1kg_inr_raw * (1 + self.customs_duty + self.aidc) * (1 + self.gst)
+
+            raw_payload = {
+                "comex_gold": comex_gold,
+                "comex_silver": comex_silver,
+                "usdinr_rate": usdinr_rate,
+                "timestamp": time.time()
+            }
 
             return {
                 "gold": {
