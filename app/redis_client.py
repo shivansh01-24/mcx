@@ -9,13 +9,25 @@ logger = logging.getLogger("Redis")
 class RedisClient:
     def __init__(self):
         # Establish connection pool using aioredis
-        self.client = aioredis.Redis(
-            host=settings.redis.host,
-            port=settings.redis.port,
-            db=settings.redis.db,
-            decode_responses=True,
-            socket_timeout=2.0
-        )
+        if settings.redis.url:
+            logger.info("Redis connection type: Railway REDIS_URL")
+            self.client = aioredis.Redis.from_url(
+                settings.redis.url,
+                decode_responses=True,
+                socket_timeout=2.0
+            )
+        else:
+            redis_type = "Local Bare-Metal"
+            if settings.redis.host == "redis":
+                redis_type = "Local Docker Compose"
+            logger.info(f"Redis connection type: {redis_type}")
+            self.client = aioredis.Redis(
+                host=settings.redis.host,
+                port=settings.redis.port,
+                db=settings.redis.db,
+                decode_responses=True,
+                socket_timeout=2.0
+            )
 
     async def ping(self) -> bool:
         try:

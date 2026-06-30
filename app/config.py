@@ -1,6 +1,6 @@
 import os
 import yaml
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 
@@ -20,6 +20,7 @@ class RedisConfig(BaseModel):
     port: int = 6379
     db: int = 0
     ttl_seconds: int = 30
+    url: Optional[str] = None
 
 class WebSocketConfig(BaseModel):
     heartbeat_interval_seconds: int = 15
@@ -92,8 +93,12 @@ def load_settings() -> Settings:
     if env_db_url:
         settings.database.url = env_db_url
         
+    env_redis_url = os.environ.get("REDIS_URL") or os.environ.get("REDISPRIVATE_URL")
+    if env_redis_url:
+        settings.redis.url = env_redis_url
+        
     env_redis_host = os.environ.get("REDIS_HOST")
-    if env_redis_host:
+    if env_redis_host and not env_redis_url:
         settings.redis.host = env_redis_host
         
     return settings

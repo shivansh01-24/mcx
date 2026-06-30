@@ -29,6 +29,13 @@ def init_db(retries=5, delay=5):
     Initializes database tables and seeds default dev API keys.
     Retries connectivity if database container is not ready yet.
     """
+    db_type = "Local Bare-Metal"
+    if "db:5432" in settings.database.url:
+        db_type = "Local Docker Compose"
+    elif "localhost" not in settings.database.url and "127.0.0.1" not in settings.database.url:
+        db_type = "Railway DATABASE_URL"
+        
+    logger.info(f"Database connection type: {db_type}")
     logger.info("Initializing database...")
     for i in range(retries):
         try:
