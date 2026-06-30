@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from app.config import settings
 from app.database import get_db, init_db, SessionLocal
@@ -462,13 +463,13 @@ async def get_system_status(api_key: APIKey = Depends(get_api_key), db: Session 
     """
     # 1. DB check
     try:
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         db_status = "CONNECTED"
     except:
         db_status = "DISCONNECTED"
 
     # 2. Redis check
-    redis_status = "CONNECTED" if redis_client.ping() else "DISCONNECTED"
+    redis_status = "CONNECTED" if await redis_client.ping() else "DISCONNECTED"
 
     # 3. Active sources
     active_source = {
