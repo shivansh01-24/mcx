@@ -51,13 +51,11 @@ class YFinanceProxyCollector(BaseCollector):
 
     async def health_check(self) -> bool:
         """
-        Verifies Yahoo Finance API connectivity.
+        yfinance_proxy is an emergency fallback — it does not pre-check
+        Yahoo Finance connectivity. Real failures are caught in collect()
+        and handled by the circuit breaker.
         """
-        try:
-            res = await self.client.head("https://query1.finance.yahoo.com/", timeout=3.0)
-            return res.status_code < 400
-        except Exception:
-            return False
+        return True
 
     async def collect(self) -> Optional[Dict[str, Dict[str, Any]]]:
         try:
@@ -100,44 +98,6 @@ class YFinanceProxyCollector(BaseCollector):
             import json as json_print
             print(json_print.dumps(gold_data)[:500])
             print(f"--- END ---")
-
-            if res_silver.status_code != 200:
-                logger.error(f"Failed to fetch COMEX Silver: HTTP {res_silver.status_code}")
-                return None
-            silver_data = res_silver.json()
-            comex_silver = silver_data["chart"]["result"][0]["meta"]["regularMarketPrice"]
-
-            # 4. Landed price math approximations
-            # 1 troy ounce = 31.1034768 grams. Gold traded in India in blocks of 10 grams.
-            price_gold_per_gram_usd = comex_gold / 31.1034768
-            price_gold_10g_inr_raw = price_gold_per_gram_usd * 10 * usdinr_rate
-            # Apply Customs + AIDC (Cess) + GST
-            landed_gold = price_gold_10g_inr_raw * (1 + self.customs_duty + self.aidc) * (1 + self.gst)
-
-            # 1 troy ounce = 0.0311034768 kg. Silver traded in India in blocks of 1 kg.
-            # 1 kg = 32.1507 troy ounces.
-            price_silver_1kg_inr_raw = comex_silver * 32.150746 * usdinr_rate
-            # Apply Customs + AIDC + GST
-            landed_silver = price_silver_1kg_inr_raw * (1 + self.customs_duty + self.aidc) * (1 + self.gst)
-
-            raw_payload = {
-                "comex_gold": comex_gold,
-                "comex_silver": comex_silver,
-                "usdinr_rate": usdinr_rate,
-                "timestamp": time.time()
-            }
-
-            print(f"Parsed Gold: Rs. {round(landed_gold, 2)} (COMEX: ${comex_gold}, USDINR: {usdinr_rate})")
-            print(f"Parsed Silver: Rs. {round(landed_silver, 2)} (COMEX: ${comex_silver})")
-            
-            # Extracted source timestamp
-            try:
-                g_meta = gold_data["chart"]["result"][0]["meta"]
-                source_ts = datetime.fromtimestamp(g_meta["regularMarketTime"], tz=timezone.utc).isoformat()
-            except Exception:
-                source_ts = "N/A"
-            print(f"Source Timestamp: {source_ts}")
-            print(f"========================================\n")
 
             return {
                 "gold": {

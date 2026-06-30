@@ -84,14 +84,15 @@ class CollectorManager:
             if old_mtime is None:
                 # New collector
                 logger.info(f"New collector file detected: {filename}. Loading...")
-                if await self.load_collector(name, filename):
-                    self.collector_files[filename] = mtime
+                await self.load_collector(name, filename)
+                # Always track the file (even if skipped/experimental) to avoid re-detection
+                self.collector_files[filename] = mtime
             elif mtime > old_mtime:
                 # Modified collector
                 logger.info(f"Modified collector file detected: {filename}. Reloading...")
                 await self.unload_collector(name)
-                if await self.load_collector(name, filename):
-                    self.collector_files[filename] = mtime
+                await self.load_collector(name, filename)
+                self.collector_files[filename] = mtime
 
     async def load_collector(self, name: str, filename: str) -> bool:
         """
