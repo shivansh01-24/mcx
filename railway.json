@@ -7,6 +7,6 @@
     "numReplicas": 1,
     "restartPolicyType": "ON_FAILURE",
     "healthcheckPath": "/api/v1/health",
-    "healthcheckTimeout": 5
+    "healthcheckTimeout": 300
   }
 }
