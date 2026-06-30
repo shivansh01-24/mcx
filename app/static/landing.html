@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCX Gold & Silver API - Real-Time Market Data Infrastructure</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #09090b;
+            --bg-card: rgba(20, 20, 25, 0.6);
+            --gold: #f59e0b;
+            --silver: #94a3b8;
+            --green: #10b981;
+            --border: rgba(255, 255, 255, 0.08);
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(245, 158, 11, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(148, 163, 184, 0.05) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        header {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--gold), #ffffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-main);
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--text-main);
+            color: var(--bg-dark);
+            border: 1px solid var(--text-main);
+        }
+
+        .btn-primary:hover {
+            background-color: transparent;
+            color: var(--text-main);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .hero {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 5rem 1.5rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hero h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            max-width: 800px;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--gold), #fef08a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+        }
+
+        .price-ticker-container {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 4rem;
+            width: 100%;
+            max-width: 800px;
+            justify-content: center;
+        }
+
+        .price-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            flex: 1;
+            max-width: 350px;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .price-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .price-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .price-card.gold-card::before { background-color: var(--gold); }
+        .price-card.silver-card::before { background-color: var(--silver); }
+
+        .price-card .label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .price-card .price {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .price-card .change {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .price-card .change.up { color: var(--green); }
+        .price-card .change.down { color: #ef4444; }
+
+        .system-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--green);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+        }
+
+        .system-status .indicator {
+            width: 8px;
+            height: 8px;
+            background-color: var(--green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.5; }
+        }
+
+        .pricing-section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 5rem 1.5rem;
+            text-align: center;
+        }
+
+        .pricing-section h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .pricing-section p.subtitle {
+            color: var(--text-muted);
+            margin-bottom: 3rem;
+            font-size: 1.1rem;
+        }
+
+        .pricing-grid {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .pricing-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2.5rem 2rem;
+            flex: 1;
+            min-width: 280px;
+            max-width: 320px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pricing-card.premium {
+            border-color: rgba(245, 158, 11, 0.4);
+            background: radial-gradient(circle at 100% 0%, rgba(245, 158, 11, 0.05) 0%, transparent 60%), var(--bg-card);
+        }
+
+        .pricing-card h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .pricing-card .price-tag {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+        }
+
+        .pricing-card .price-tag span {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .pricing-card ul {
+            list-style: none;
+            margin-bottom: 2rem;
+            flex: 1;
+        }
+
+        .pricing-card ul li {
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .pricing-card ul li i {
+            color: var(--green);
+        }
+
+        footer {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 1.5rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        footer a {
+            color: var(--text-muted);
+            text-decoration: none;
+            margin-left: 1.5rem;
+            transition: color 0.2s ease;
+        }
+
+        footer a:hover {
+            color: var(--text-main);
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.8rem; }
+            .price-ticker-container { flex-direction: column; align-items: center; }
+            .price-card { width: 100%; }
+            header { flex-direction: column; gap: 1.5rem; }
+            footer { flex-direction: column; gap: 1.5rem; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <i class="fa-solid fa-chart-line-up"></i> MCX API
+        </div>
+        <nav class="nav-links">
+            <a href="/dashboard"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
+            <a href="/docs"><i class="fa-solid fa-book-open"></i> API Docs</a>
+            <a href="/api/v1/health"><i class="fa-solid fa-heartbeat"></i> Health</a>
+            <a href="https://github.com" target="_blank"><i class="fa-brands fa-github"></i> GitHub</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="system-status">
+                <div class="indicator"></div>
+                System Operational &bull; Live Consensus Ingestion Active
+            </div>
+            <h1>Real-Time <span>MCX Gold & Silver</span> Price Delivery API</h1>
+            <p>High-frequency validated quotes, sub-20ms cached response pipelines, multi-source consensus, and instant WebSocket updates.</p>
+            
+            <div class="price-ticker-container">
+                <div class="price-card gold-card">
+                    <div class="label">MCX Gold (10g)</div>
+                    <div class="price" id="gold-price">Rs. --,---.--</div>
+                    <div class="change" id="gold-change"><i class="fa-solid fa-spinner fa-spin"></i> --</div>
+                </div>
+                <div class="price-card silver-card">
+                    <div class="label">MCX Silver (1kg)</div>
+                    <div class="price" id="silver-price">Rs. --,---.--</div>
+                    <div class="change" id="silver-change"><i class="fa-solid fa-spinner fa-spin"></i> --</div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem;">
+                <a href="/dashboard" class="btn btn-primary">Go to Developer Dashboard</a>
+                <a href="/docs" class="btn btn-outline">Explore API Swagger</a>
+            </div>
+        </section>
+
+        <section class="pricing-section">
+            <h2>API Pricing & Limits</h2>
+            <p class="subtitle">Scale seamlessly from hobbyist to high-frequency commercial execution.</p>
+            
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3>Free Plan</h3>
+                    <div class="price-tag">Rs. 0 <span>/ mo</span></div>
+                    <ul>
+                        <li><i class="fa-solid fa-check"></i> 60 requests / minute</li>
+                        <li><i class="fa-solid fa-check"></i> 5,000 requests / day</li>
+                        <li><i class="fa-solid fa-check"></i> Webhooks & WebSockets</li>
+                        <li><i class="fa-solid fa-check"></i> Non-commercial usage</li>
+                    </ul>
+                    <a href="/dashboard" class="btn btn-outline">Start Free</a>
+                </div>
+                <div class="pricing-card premium">
+                    <h3>Developer Plan</h3>
+                    <div class="price-tag">Rs. 1,999 <span>/ mo</span></div>
+                    <ul>
+                        <li><i class="fa-solid fa-check"></i> 300 requests / minute</li>
+                        <li><i class="fa-solid fa-check"></i> 50,000 requests / day</li>
+                        <li><i class="fa-solid fa-check"></i> Priority Consensus Weights</li>
+                        <li><i class="fa-solid fa-check"></i> Commercial license</li>
+                    </ul>
+                    <a href="/dashboard" class="btn btn-primary">Go Developer</a>
+                </div>
+                <div class="pricing-card">
+                    <h3>Premium Plan</h3>
+                    <div class="price-tag">Rs. 4,999 <span>/ mo</span></div>
+                    <ul>
+                        <li><i class="fa-solid fa-check"></i> 1,000 requests / minute</li>
+                        <li><i class="fa-solid fa-check"></i> 200,000 requests / day</li>
+                        <li><i class="fa-solid fa-check"></i> SLA uptime guarantees</li>
+                        <li><i class="fa-solid fa-check"></i> Dedicated support</li>
+                    </ul>
+                    <a href="/dashboard" class="btn btn-outline">Go Premium</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div>
+            &copy; 2026 MCX Market Data Platform. All rights reserved.
+        </div>
+        <div>
+            <a href="/docs">Terms</a>
+            <a href="/docs">Privacy</a>
+            <a href="/api/v1/health">Status</a>
+        </div>
+    </footer>
+
+    <script>
+        async function fetchPrices() {
+            try {
+                // Seed key is mcx_pub_dev_key
+                const res = await fetch('/api/v1/prices?api_key=mcx_pub_dev_key');
+                if (res.ok) {
+                    const payload = await res.json();
+                    if (payload.success && payload.data) {
+                        payload.data.forEach(item => {
+                            const priceEl = document.getElementById(`${item.commodity}-price`);
+                            const changeEl = document.getElementById(`${item.commodity}-change`);
+                            
+                            // Format price
+                            priceEl.innerText = `Rs. ${item.price.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+                            
+                            // Format change
+                            const icon = item.change >= 0 ? '<i class="fa-solid fa-caret-up"></i>' : '<i class="fa-solid fa-caret-down"></i>';
+                            const state = item.change >= 0 ? 'up' : 'down';
+                            changeEl.innerHTML = `${icon} ${Math.abs(item.change).toFixed(2)} (${item.change_percent.toFixed(2)}%)`;
+                            changeEl.className = `change ${state}`;
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load live prices", e);
+            }
+        }
+
+        // Fetch on load, then poll every 10 seconds
+        fetchPrices();
+        setInterval(fetchPrices, 10000);
+    </script>
+</body>
+</html>

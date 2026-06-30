@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCX Gold & Silver Platform Dashboard</title>
+    <!-- Google Fonts Outfit & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS stylesheet -->
+    <link rel="stylesheet" href="/static/styles.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="glow-bg"></div>
+    <div class="app-container">
+        <!-- Navigation Header -->
+        <header class="main-header">
+            <div class="logo-area">
+                <i class="fa-solid fa-layer-group brand-icon"></i>
+                <div class="brand-text">
+                    <h1>MCX Live API</h1>
+                    <span>SaaS Commodity Price Platform</span>
+                </div>
+            </div>
+            <div class="server-status-pill">
+                <span class="status-indicator-light glowing" id="header-status-dot"></span>
+                <span id="header-status-text">Connecting...</span>
+            </div>
+        </header>
+
+        <!-- Main Dashboard View Grid -->
+        <main class="dashboard-grid">
+            
+            <!-- Real-Time Commodity Price Tiles (Left Block) -->
+            <section class="price-cards-section">
+                <!-- GOLD CARD -->
+                <div class="card glassmorphism-card price-card" id="gold-price-card">
+                    <div class="card-glow gold-glow"></div>
+                    <div class="card-header">
+                        <div class="card-title-area">
+                            <span class="commodity-tag gold-tag">Gold</span>
+                            <h2>MCX Gold Futures</h2>
+                        </div>
+                        <span class="trend-icon" id="gold-trend-icon"><i class="fa-solid fa-arrow-up"></i></span>
+                    </div>
+                    <div class="price-display">
+                        <span class="currency-symbol">₹</span>
+                        <span class="price-value" id="gold-price">--,--</span>
+                    </div>
+                    <div class="price-change-area">
+                        <span class="price-change-value positive" id="gold-change">+0.00</span>
+                        <span class="price-change-pct positive" id="gold-change-pct">(+0.00%)</span>
+                    </div>
+                    <div class="card-footer-metrics">
+                        <div>
+                            <span class="footer-label">Daily Min/Max</span>
+                            <span class="footer-value" id="gold-ohlc">₹-- / ₹--</span>
+                        </div>
+                        <div>
+                            <span class="footer-label">Confidence</span>
+                            <span class="footer-value" id="gold-confidence">--%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SILVER CARD -->
+                <div class="card glassmorphism-card price-card" id="silver-price-card">
+                    <div class="card-glow silver-glow"></div>
+                    <div class="card-header">
+                        <div class="card-title-area">
+                            <span class="commodity-tag silver-tag">Silver</span>
+                            <h2>MCX Silver Futures</h2>
+                        </div>
+                        <span class="trend-icon" id="silver-trend-icon"><i class="fa-solid fa-arrow-up"></i></span>
+                    </div>
+                    <div class="price-display">
+                        <span class="currency-symbol">₹</span>
+                        <span class="price-value" id="silver-price">--,--</span>
+                    </div>
+                    <div class="price-change-area">
+                        <span class="price-change-value positive" id="silver-change">+0.00</span>
+                        <span class="price-change-pct positive" id="silver-change-pct">(+0.00%)</span>
+                    </div>
+                    <div class="card-footer-metrics">
+                        <div>
+                            <span class="footer-label">Daily Min/Max</span>
+                            <span class="footer-value" id="silver-ohlc">₹-- / ₹--</span>
+                        </div>
+                        <div>
+                            <span class="footer-label">Confidence</span>
+                            <span class="footer-value" id="silver-confidence">--%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Consensus Gauges & Live Stream Stats (Middle Block) -->
+            <section class="consensus-gauges-section">
+                <div class="card glassmorphism-card consensus-card">
+                    <h3>Consensus validation engine</h3>
+                    <div class="engine-metrics">
+                        <div class="metric-box">
+                            <span class="metric-val" id="active-source-count">0</span>
+                            <span class="metric-lbl">Active Feeds</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-val" id="primary-collector-name">None</span>
+                            <span class="metric-lbl">Primary Feed</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-val" id="consensus-latency">0ms</span>
+                            <span class="metric-lbl">Ingest Latency</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Sparkline Charts Container -->
+                    <div class="chart-container">
+                        <canvas id="tickerChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- System Metrics & Telemetry (Right Block) -->
+            <section class="telemetry-section">
+                <div class="card glassmorphism-card status-card">
+                    <h3>System telemetry</h3>
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <span class="stat-lbl">Redis Cache</span>
+                            <span class="badge badge-success" id="redis-status">CONNECTED</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="stat-lbl">PostgreSQL</span>
+                            <span class="badge badge-success" id="postgres-status">CONNECTED</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="stat-lbl">WS Clients</span>
+                            <span class="stat-val" id="ws-client-count">0</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="stat-lbl">CPU Usage</span>
+                            <span class="stat-val" id="cpu-usage">0%</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="stat-lbl">RAM Usage</span>
+                            <span class="stat-val" id="ram-usage">0MB</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="stat-lbl">Disk Usage</span>
+                            <span class="stat-val" id="disk-usage">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Leaderboard & Developer Hub -->
+        <section class="secondary-grid">
+            <!-- Collector Leaderboard -->
+            <div class="card glassmorphism-card leaderboard-card">
+                <h3>Collector ranking & health</h3>
+                <table class="data-table" id="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Collector</th>
+                            <th>Type</th>
+                            <th>Avg Latency</th>
+                            <th>Success Rate</th>
+                            <th>Circuit Breaker</th>
+                            <th>Health Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Inserted dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Code Snippets Hub -->
+            <div class="card glassmorphism-card dev-hub-card">
+                <h3>Developer Hub & SDK Code Examples</h3>
+                <div class="dev-tabs">
+                    <button class="tab-btn active" onclick="switchTab('curl')">cURL</button>
+                    <button class="tab-btn" onclick="switchTab('python')">Python</button>
+                    <button class="tab-btn" onclick="switchTab('node')">NodeJS</button>
+                    <button class="tab-btn" onclick="switchTab('go')">Go</button>
+                    <button class="tab-btn" onclick="switchTab('php')">PHP</button>
+                    <button class="tab-btn" onclick="switchTab('java')">Java</button>
+                </div>
+                <div class="api-key-selector-area">
+                    <label for="dev-api-key">API Key: </label>
+                    <input type="text" id="dev-api-key" value="mcx_pub_dev_key" placeholder="Enter key">
+                </div>
+                <div class="code-terminal">
+                    <pre><code id="snippet-code"></code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Admin Control Room -->
+        <section class="admin-grid">
+            <!-- API Keys Manager -->
+            <div class="card glassmorphism-card admin-card">
+                <h3>API Key Administrator</h3>
+                <form id="key-generator-form" class="form-horizontal">
+                    <div class="form-group">
+                        <input type="text" id="owner-name" placeholder="Owner Name" required>
+                        <select id="key-plan">
+                            <option value="free">Free Plan (60 req/m)</option>
+                            <option value="developer">Developer Plan (300 req/m)</option>
+                            <option value="premium">Premium Plan (1000 req/m)</option>
+                            <option value="unlimited">Unlimited Plan</option>
+                        </select>
+                        <input type="text" id="key-description" placeholder="Description">
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-key"></i> Generate Key</button>
+                    </div>
+                </form>
+                <div class="api-keys-list-container">
+                    <table class="data-table" id="keys-table">
+                        <thead>
+                            <tr>
+                                <th>Key</th>
+                                <th>Owner</th>
+                                <th>Plan</th>
+                                <th>Created</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Seeded key shown by default -->
+                            <tr>
+                                <td><code>mcx_pub_dev_key</code></td>
+                                <td>Developer Public Account</td>
+                                <td><span class="badge badge-premium">unlimited</span></td>
+                                <td>System Seeding</td>
+                                <td><button class="btn-revoke" disabled>Active</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Live logs and diagnostics terminal -->
+            <div class="card glassmorphism-card admin-card logs-card">
+                <h3>Live platform logs console</h3>
+                <div class="logs-console" id="logs-console-area">
+                    <div class="log-line info">{"timestamp":"2026-06-30T13:28:00Z", "level":"INFO", "logger":"Main", "message":"Initializing Graceful Startup Pipeline..."}</div>
+                    <div class="log-line info">{"timestamp":"2026-06-30T13:28:01Z", "level":"INFO", "logger":"Database", "message":"Database tables verified/created successfully."}</div>
+                    <div class="log-line info">{"timestamp":"2026-06-30T13:28:01Z", "level":"INFO", "logger":"Redis", "message":"Redis connected successfully."}</div>
+                    <div class="log-line info">{"timestamp":"2026-06-30T13:28:02Z", "level":"INFO", "logger":"CollectorManager", "message":"Collector 'mcxlive' loaded and running successfully."}</div>
+                    <div class="log-line info">{"timestamp":"2026-06-30T13:28:02Z", "level":"INFO", "logger":"CollectorManager", "message":"Collector 'moneycontrol' loaded and running successfully."}</div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Core App Logic -->
+    <script src="/static/app.js"></script>
+</body>
+</html>

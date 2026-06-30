@@ -1,0 +1,58 @@
+platform:
+  version: "1.0.0"
+  log_level: "INFO"
+  db_cleanup_days: 7
+  expired_key_cleanup_minutes: 60
+
+database:
+  url: "postgresql://postgres:postgres@db:5432/mcx_platform"
+  pool_size: 20
+  max_overflow: 10
+
+redis:
+  host: "redis"
+  port: 6379
+  db: 0
+  ttl_seconds: 30
+
+websocket:
+  heartbeat_interval_seconds: 15
+
+consensus:
+  outlier_threshold_percent: 1.5
+  min_required_sources: 2
+  fallback_to_proxy_on_failure: true
+  proxy_confidence: 20.0
+
+ranking:
+  weights:
+    priority: 50.0
+    success_rate: 30.0
+    latency: 15.0
+    failures: 25.0
+  decay_factor: 0.9
+
+retry:
+  max_attempts: 3
+  base_delay_seconds: 1.0
+  max_delay_seconds: 10.0
+  timeout_seconds: 5.0
+  jitter: true
+
+circuit_breaker:
+  failure_threshold: 3
+  recovery_timeout_seconds: 30
+
+plans:
+  free:
+    rate_limit_per_minute: 60
+    daily_quota: 5000
+  developer:
+    rate_limit_per_minute: 300
+    daily_quota: 50000
+  premium:
+    rate_limit_per_minute: 1000
+    daily_quota: 200000
+  unlimited:
+    rate_limit_per_minute: 10000
+    daily_quota: 9999999
