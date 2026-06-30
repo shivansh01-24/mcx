@@ -1,21 +1,55 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-from app.config import settings
 from app.models import Base, APIKey
 import time
 import logging
 
 logger = logging.getLogger("Database")
 
-# Create engine
+# -----------------------------------------------------------------------
+# Priority resolution:
+#   1. DATABASE_URL env var  (Railway injects this automatically)
+#   2. config.yaml / MCX_DATABASE__URL env var  (local / Docker Compose)
+# -----------------------------------------------------------------------
+def _resolve_db_url() -> str:
+    url = os.environ.get("DATABASE_URL", "")
+    if url:
+        # Railway Postgres URLs start with "postgres://" — SQLAlchemy
+        # psycopg2 requires "postgresql://"
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql://", 1)
+        return url
+
+    # Fall back to settings (reads config.yaml + MCX_* env vars)
+    from app.config import settings
+    return settings.database.url
+
+
+_DB_URL = _resolve_db_url()
+
+# Detect and log connection type at import time
+def _describe_db(url: str) -> str:
+    if "db:5432" in url or "@db/" in url:
+        return "Local Docker Compose (hostname: db)"
+    if "localhost" in url or "127.0.0.1" in url:
+        return "Local Bare-Metal"
+    return "Railway DATABASE_URL"
+
+_DB_TYPE = _describe_db(_DB_URL)
+logger.info(f"Database connection type: {_DB_TYPE}")
+logger.info(f"Database host: {_DB_URL.split('@')[-1].split('/')[0] if '@' in _DB_URL else _DB_URL[:40]}")
+
+# Create engine using resolved URL
 engine = create_engine(
-    settings.database.url,
-    pool_size=settings.database.pool_size,
-    max_overflow=settings.database.max_overflow,
+    _DB_URL,
+    pool_size=20,
+    max_overflow=10,
     pool_pre_ping=True
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 
 def get_db():
     db = SessionLocal()
@@ -24,24 +58,18 @@ def get_db():
     finally:
         db.close()
 
+
 def init_db(retries=5, delay=5):
     """
     Initializes database tables and seeds default dev API keys.
     Retries connectivity if database container is not ready yet.
     """
-    db_type = "Local Bare-Metal"
-    if "db:5432" in settings.database.url:
-        db_type = "Local Docker Compose"
-    elif "localhost" not in settings.database.url and "127.0.0.1" not in settings.database.url:
-        db_type = "Railway DATABASE_URL"
-        
-    logger.info(f"Database connection type: {db_type}")
-    logger.info("Initializing database...")
+    logger.info(f"Initializing database ({_DB_TYPE})...")
     for i in range(retries):
         try:
             Base.metadata.create_all(bind=engine)
             logger.info("Database tables verified/created successfully.")
-            
+
             # Seed default API key if not exists
             db = SessionLocal()
             try:
@@ -59,6 +87,7 @@ def init_db(retries=5, delay=5):
                     )
                     db.add(new_key)
                     db.commit()
+                    logger.info("Default API key seeded successfully.")
             except Exception as e:
                 db.rollback()
                 logger.error(f"Error seeding database: {e}")
